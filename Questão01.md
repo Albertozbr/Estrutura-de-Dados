@@ -6,118 +6,128 @@ W. Por exemplo: ababcbaba. Escreva um programa que decida se uma determinada
 string pertence ou não ao formato WcM. Utilize uma estrutura de pilha para resolver o
 problema.
 
+# Utilizei pilha estática para resolver este exercício
 Declarando as Funções
 ```C
 #ifndef EXEH_H
 #define EXEH_H
+#define TAM 10
 
-typedef struct LETRA{
-    char item;
-    struct LETRA *proximo;
-}*tipopilha;
+typedef struct ITEM{
+    int topo;
+    char dados[TAM];
+}tipopilha;
 
-tipopilha criaritem(char letra);
-tipopilha inserir(tipopilha pilha, char letra);
-char lerTopo(tipopilha pilha);
-tipopilha remover(tipopilha pilha);
-void exibir(tipopilha pilha);
-#endif
+void inicializar(tipopilha *pilha);
+int cheia(tipopilha *pilha);
+int vazia(tipopilha *pilha);
+int inserir(tipopilha *pilha, char letra);
+int verificarWcM(char palavra[], int tamanho);
+int lerTopo(tipopilha *pilha);
+
+#endif    
 ```
 A lógica e o código
 ```C
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "exeH.h"
+#include <string.h>
 
-tipopilha criaritem(char letra){
-    tipopilha novaLetra = (tipopilha) malloc(sizeof(struct LETRA));
-
-    if(novaLetra == NULL){
-        printf("\nErro na aloação de memória\n");
-    }else{
-        novaLetra->item = letra;
-        novaLetra->proximo = NULL;
-    }
-    return novaLetra;
+void inicializar(tipopilha *pilha){
+    pilha->topo = -1;
 }
-
-tipopilha inserir(tipopilha pilha, char letra){
-    tipopilha novaLetra = criaritem(letra);
-    novaLetra->proximo = pilha;
-    return novaLetra;
-}
-char lerTopo(tipopilha pilha){
-    if(pilha == NULL){
-        return '\0';
+int cheia(tipopilha *pilha){
+    if(pilha->topo==TAM-1){
+        return 1;
     }else{
-        return pilha->item;
+        return 0;
     }
 }
+int vazia(tipopilha *pilha){
+    if(pilha->topo==-1){
+        return 1;
+    }else{
+        return 0;
+    }
+}
+int inserir(tipopilha *pilha, char letra){
+    if(cheia(pilha)==1){
+        return -1;
+    }else{
+        return pilha->dados[++pilha->topo] = letra; // ++ antes, o elevador antes sobe para depois deixar a caixa
+    }
+}
+int remover(tipopilha *pilha){
+    if(vazia(pilha)==1){
+        return -1;
+    }else{
+        return pilha->dados[pilha->topo--];
+    }
+}
+int lerTopo(tipopilha *pilha){
+    if(vazia(pilha)==1){
+        return 1;
+    }else{
+        return pilha->dados[pilha->topo];
+    }
+}
+int verificarWcM(char palavra[], int tamanho){
+    tipopilha pilha;
+    inicializar(&pilha);
+    int achouC = 0;
 
-tipopilha remover(tipopilha pilha){
-    if(pilha == NULL){
-        printf("\nPilha vazia\n");
-    }else{
-        tipopilha pilhaAux = pilha->proximo;
-        free(pilha);
-        pilha = NULL;
-        return pilhaAux;
+    for(int i = 0; i<tamanho; i++){
+       char LetraA = palavra[i];
+
+       if(LetraA == 'c'){ // se for c então já achou
+            achouC = 1;
+       }else if(achouC == 0){ // senao se, montar o W
+        inserir(&pilha, LetraA);
+       }else if(achouC == 1){ // se achar o c então vamos montar e verificar se o W está certo
+            if(vazia(&pilha)==1){ // verificação caso a palavra nao termine
+                return 0;
+            }
+            char letraTopo = remover(&pilha); // falamos que a letra do topo é a mesma que iremos remover
+            
+            if(LetraA != letraTopo){ // se essa letra que acabamos de remover for diferente a letra letra que estamos empilhando, então não é válido
+                return 0;
+            }
+       }
     }
-}
-void exibir(tipopilha pilha){
-    printf("--PILHA ATUAL--");
-    if(pilha == NULL){
-        printf("\nPilha Vazia\n");
+    if(vazia(&pilha)==1){ //se a pilha esvaziar todo é pq é valido, no tudo deu certo, return 1.
+        return 1;
     }else{
-        while(pilha!=NULL){
-            printf("\t %c \n", pilha->item);
-            pilha = pilha->proximo;
-        }
+        return 0;
     }
+    
 }
+
+ 
 ```
 Main
 ```C
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "exeH.h"
+#include <string.h>
 
 void main(){
-    char palavra[100];
-    tipopilha pilha = NULL;
+    tipopilha pilha;
+    inicializar(&pilha);
+    char palavra[10];
 
-    int acharC = 0;
-
-    printf("informe a palavra, EX:(abcbaba), e veremos se é do formato WcM\n");
+    printf("informe a palavra ex: (ababcbaba):");
     scanf("%s", palavra);
 
-    int tamanho = strlen(palavra);//aqui ve quantas letras tem na palavra
+    int tamanho = strlen(palavra);
 
-    for(int i=0; i<tamanho;i++){
-        char letraA = palavra[i];
-
-        if(letraA == 'c'){
-            acharC = 1;
-        }
-        else if(acharC == 0){
-            pilha = inserir(pilha, letraA);
-        }
-        else if(acharC == 1){
-            char letraDoTopo = lerTopo(pilha);
-
-            if(letraA != letraDoTopo){
-                printf("formato inválido\n");
-                return;
-            }
-            pilha = remover(pilha);
-        } 
-    }
-    if(pilha == NULL){
-        printf("Formato WcM, válido\n");
+    int r=verificarWcM(palavra,tamanho);
+    if(r==1){
+        printf("certo");
     }else{
-        printf("Formato WcM inválido\n");
+        printf("errado");
+
     }
 
 }
